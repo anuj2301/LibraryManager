@@ -1,9 +1,14 @@
 import { useState, useEffect } from "react";
 import { BookOpen, Users, Plus, Search, Menu, X, Sun, Moon } from "lucide-react";
+import axios from "axios";
 
 // Main App Component with Theme Context
 export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // data states
+  const [books, setBooks] = useState([]);
+  const [users, setUsers] = useState([]);
 
   // Apply global styles when component mounts
   useEffect(() => {
@@ -23,10 +28,35 @@ export default function App() {
       `;
       document.head.appendChild(style);
     }
+
+    // initial load
+    fetchBooks();
+    fetchUsers();
   }, []);
 
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
+  };
+
+  // API helpers
+  const fetchBooks = async () => {
+    try {
+      const res = await axios.get("/api/books");
+      setBooks(res.data || []);
+    } catch (err) {
+      console.error("Failed to fetch books:", err);
+      setBooks([]);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const res = await axios.get("/api/users");
+      setUsers(res.data || []);
+    } catch (err) {
+      console.error("Failed to fetch users:", err);
+      setUsers([]);
+    }
   };
 
   const appStyle = {
@@ -56,15 +86,43 @@ export default function App() {
             Your comprehensive library management solution
           </p>
         </div>
-        <BookForm isDarkMode={isDarkMode} />
-        <BookList isDarkMode={isDarkMode} />
-        <UserList isDarkMode={isDarkMode} />
+
+        {/* NOTE: BookForm, BookList, UserList receive props to call APIs */}
+        <BookForm isDarkMode={isDarkMode} onAdded={() => fetchBooks()} />
+        <BookList isDarkMode={isDarkMode} books={books} onDelete={async (id) => {
+          try { await axios.delete(`/api/books/${id}`); fetchBooks(); }
+          catch(e){ console.error(e); alert("Delete failed"); }
+        }} onToggle={async (book) => {
+          try {
+            const payload = { ...book, available: !book.available };
+            await axios.put(`/api/books/${book.id}`, payload);
+            fetchBooks();
+          } catch (e) { console.error(e); alert("Update failed"); }
+        }} />
+
+        <UserList isDarkMode={isDarkMode} users={users}
+          onAdded={() => fetchUsers()}
+          onBorrow={async (userId, bookId) => {
+            try {
+              await axios.post(`/api/users/${userId}/borrow`, { bookId });
+              // refresh both lists
+              fetchUsers(); fetchBooks();
+            } catch (e) { console.error(e); alert("Borrow failed"); }
+          }}
+          onReturn={async (userId, bookId) => {
+            try {
+              await axios.post(`/api/users/${userId}/return`, { bookId });
+              fetchUsers(); fetchBooks();
+            } catch (e) { console.error(e); alert("Return failed"); }
+          }}
+          availableBooks={books.filter(b => b.available)}
+        />
       </div>
     </div>
   );
 }
 
-// Navbar Component
+// ---------------- Navbar Component ----------------
 function Navbar({ isDarkMode, toggleTheme }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -197,9 +255,13 @@ function Navbar({ isDarkMode, toggleTheme }) {
   );
 }
 
-// BookForm Component
-function BookForm({ isDarkMode }) {
+// ---------------- BookForm Component (now wired to backend) ----------------
+function BookForm({ isDarkMode, onAdded }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [title, setTitle] = useState("");
+  const [author, setAuthor] = useState("");
+  const [isbn, setIsbn] = useState("");
+  const [genre, setGenre] = useState("Fiction");
 
   const containerStyle = {
     backgroundColor: isDarkMode ? '#292524' : '#f5f5f4',
@@ -248,18 +310,6 @@ function BookForm({ isDarkMode }) {
     marginTop: '24px'
   };
 
-  const inputGroupStyle = {
-    display: 'flex',
-    flexDirection: 'column'
-  };
-
-  const labelStyle = {
-    fontSize: '0.875rem',
-    fontWeight: '600',
-    color: isDarkMode ? '#d6d3d1' : '#44403c',
-    marginBottom: '8px'
-  };
-
   const inputStyle = {
     width: '100%',
     padding: '8px 16px',
@@ -279,8 +329,21 @@ function BookForm({ isDarkMode }) {
     fontWeight: '600'
   };
 
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.post("/api/books", { title, author, isbn, genre, available: true });
+      setTitle(""); setAuthor(""); setIsbn(""); setGenre("Fiction");
+      onAdded?.();
+      alert("Book added");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to add book");
+    }
+  };
+
   return (
-    <div style={containerStyle}>
+    <div style={containerStyle} id="books">
       <div style={headerStyle}>
         <div style={titleContainerStyle}>
           <Plus size={24} color={isDarkMode ? '#d6d3d1' : '#44403c'} />
@@ -291,22 +354,22 @@ function BookForm({ isDarkMode }) {
         </button>
       </div>
       
-      <div style={formStyle}>
-        <div style={inputGroupStyle}>
-          <label style={labelStyle}>Title</label>
-          <input type="text" placeholder="Enter book title" style={inputStyle} />
+      <form style={formStyle} onSubmit={handleAdd}>
+        <div>
+          <label style={{display:'block', marginBottom:8, color: isDarkMode ? '#d6d3d1' : '#44403c'}}>Title</label>
+          <input value={title} onChange={e=>setTitle(e.target.value)} type="text" placeholder="Enter book title" style={inputStyle} required />
         </div>
-        <div style={inputGroupStyle}>
-          <label style={labelStyle}>Author</label>
-          <input type="text" placeholder="Enter author name" style={inputStyle} />
+        <div>
+          <label style={{display:'block', marginBottom:8, color: isDarkMode ? '#d6d3d1' : '#44403c'}}>Author</label>
+          <input value={author} onChange={e=>setAuthor(e.target.value)} type="text" placeholder="Enter author name" style={inputStyle} required />
         </div>
-        <div style={inputGroupStyle}>
-          <label style={labelStyle}>ISBN</label>
-          <input type="text" placeholder="Enter ISBN" style={inputStyle} />
+        <div>
+          <label style={{display:'block', marginBottom:8, color: isDarkMode ? '#d6d3d1' : '#44403c'}}>ISBN</label>
+          <input value={isbn} onChange={e=>setIsbn(e.target.value)} type="text" placeholder="Enter ISBN" style={inputStyle} />
         </div>
-        <div style={inputGroupStyle}>
-          <label style={labelStyle}>Genre</label>
-          <select style={inputStyle}>
+        <div>
+          <label style={{display:'block', marginBottom:8, color: isDarkMode ? '#d6d3d1' : '#44403c'}}>Genre</label>
+          <select value={genre} onChange={e=>setGenre(e.target.value)} style={inputStyle}>
             <option>Fiction</option>
             <option>Non-Fiction</option>
             <option>Science</option>
@@ -314,24 +377,15 @@ function BookForm({ isDarkMode }) {
             <option>Biography</option>
           </select>
         </div>
-        <button style={submitButtonStyle}>
-          Add Book to Library
-        </button>
-      </div>
+        <button type="submit" style={submitButtonStyle}>Add Book to Library</button>
+      </form>
     </div>
   );
 }
 
-// BookList Component
-function BookList({ isDarkMode }) {
+// ---------------- BookList Component (wired to backend via props) ----------------
+function BookList({ isDarkMode, books = [], onDelete, onToggle }) {
   const [searchTerm, setSearchTerm] = useState('');
-  
-  const mockBooks = [
-    { id: 1, title: "The Great Gatsby", author: "F. Scott Fitzgerald", isbn: "978-0-7432-7356-5", status: "Available", genre: "Fiction" },
-    { id: 2, title: "To Kill a Mockingbird", author: "Harper Lee", isbn: "978-0-06-112008-4", status: "Checked Out", genre: "Fiction" },
-    { id: 3, title: "1984", author: "George Orwell", isbn: "978-0-452-28423-4", status: "Available", genre: "Dystopian Fiction" },
-    { id: 4, title: "Pride and Prejudice", author: "Jane Austen", isbn: "978-0-14-143951-8", status: "Available", genre: "Romance" }
-  ];
 
   const containerStyle = {
     backgroundColor: isDarkMode ? '#292524' : '#f5f5f4',
@@ -343,166 +397,47 @@ function BookList({ isDarkMode }) {
     transition: 'all 0.3s ease'
   };
 
-  const headerStyle = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '24px',
-    flexWrap: 'wrap',
-    gap: '16px'
-  };
-
-  const titleContainerStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px'
-  };
-
-  const titleStyle = {
-    fontSize: '1.5rem',
-    fontWeight: 'bold',
-    color: isDarkMode ? '#f5f5f4' : '#1c1917'
-  };
-
-  const searchContainerStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    backgroundColor: isDarkMode ? '#44403c' : 'white',
-    border: `1px solid ${isDarkMode ? '#57534e' : '#d6d3d1'}`,
-    borderRadius: '8px',
-    padding: '8px 12px'
-  };
-
-  const searchInputStyle = {
-    border: 'none',
-    outline: 'none',
-    backgroundColor: 'transparent',
-    color: isDarkMode ? '#f5f5f4' : '#1c1917',
-    fontSize: '1rem'
-  };
-
-  const booksGridStyle = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '16px'
-  };
-
-  const bookCardStyle = {
-    backgroundColor: isDarkMode ? '#44403c' : 'white',
-    border: `1px solid ${isDarkMode ? '#57534e' : '#e7e5e4'}`,
-    borderRadius: '8px',
-    padding: '16px',
-    transition: 'all 0.2s ease'
-  };
-
-  const bookHeaderStyle = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    flexWrap: 'wrap',
-    gap: '16px'
-  };
-
-  const bookInfoStyle = {
-    flex: '1',
-    minWidth: '200px'
-  };
-
-  const bookTitleStyle = {
-    fontSize: '1.125rem',
-    fontWeight: '600',
-    color: isDarkMode ? '#f5f5f4' : '#1c1917',
-    marginBottom: '4px'
-  };
-
-  const bookAuthorStyle = {
-    color: isDarkMode ? '#d6d3d1' : '#57534e',
-    marginBottom: '8px'
-  };
-
-  const bookMetaStyle = {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: '8px',
-    fontSize: '0.875rem'
-  };
-
-  const genreTagStyle = {
-    backgroundColor: isDarkMode ? '#57534e' : '#e7e5e4',
-    color: isDarkMode ? '#e7e5e4' : '#1c1917',
-    padding: '4px 8px',
-    borderRadius: '4px'
-  };
-
-  const bookActionsStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    flexWrap: 'wrap'
-  };
-
-  const statusStyle = (status) => ({
-    padding: '4px 12px',
-    borderRadius: '20px',
-    fontSize: '0.875rem',
-    fontWeight: '500',
-    backgroundColor: status === 'Available' 
-      ? isDarkMode ? '#14532d' : '#dcfce7' 
-      : isDarkMode ? '#7f1d1d' : '#fecaca',
-    color: status === 'Available' 
-      ? isDarkMode ? '#bbf7d0' : '#166534' 
-      : isDarkMode ? '#fca5a5' : '#dc2626'
+  // filter locally
+  const filtered = books.filter(b => {
+    const q = searchTerm.toLowerCase();
+    return !q || (b.title && b.title.toLowerCase().includes(q)) || (b.author && b.author.toLowerCase().includes(q)) || (b.isbn && b.isbn.toLowerCase().includes(q));
   });
-
-  const actionButtonStyle = {
-    backgroundColor: isDarkMode ? '#78716c' : '#57534e',
-    color: 'white',
-    padding: '8px 16px',
-    borderRadius: '8px',
-    border: 'none',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease'
-  };
 
   return (
     <div style={containerStyle}>
-      <div style={headerStyle}>
-        <div style={titleContainerStyle}>
+      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:24}}>
+        <div style={{display:'flex', alignItems:'center', gap:12}}>
           <BookOpen size={24} color={isDarkMode ? '#d6d3d1' : '#44403c'} />
-          <h2 style={titleStyle}>Library Collection</h2>
+          <h2 style={{fontSize:'1.5rem', fontWeight:'bold', color: isDarkMode ? '#f5f5f4' : '#1c1917'}}>Library Collection</h2>
         </div>
-        <div style={searchContainerStyle}>
+        <div style={{display:'flex', alignItems:'center', gap:8, backgroundColor: isDarkMode ? '#44403c' : 'white', border: `1px solid ${isDarkMode ? '#57534e' : '#d6d3d1'}`, borderRadius:8, padding:'8px 12px'}}>
           <Search size={20} color={isDarkMode ? '#a8a29e' : '#57534e'} />
-          <input
-            type="text"
-            placeholder="Search books..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={searchInputStyle}
-          />
+          <input value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} placeholder="Search books..." style={{border:'none', outline:'none', background:'transparent', color: isDarkMode ? '#f5f5f4' : '#1c1917'}} />
         </div>
       </div>
 
-      <div style={booksGridStyle}>
-        {mockBooks.map((book) => (
-          <div key={book.id} style={bookCardStyle}>
-            <div style={bookHeaderStyle}>
-              <div style={bookInfoStyle}>
-                <h3 style={bookTitleStyle}>{book.title}</h3>
-                <p style={bookAuthorStyle}>by {book.author}</p>
-                <div style={bookMetaStyle}>
-                  <span style={genreTagStyle}>{book.genre}</span>
-                  <span style={{ color: isDarkMode ? '#a8a29e' : '#57534e' }}>
-                    ISBN: {book.isbn}
-                  </span>
+      <div style={{display:'flex', flexDirection:'column', gap:16}}>
+        {filtered.map((book) => (
+          <div key={book.id} style={{backgroundColor:isDarkMode? '#44403c':'white', border:`1px solid ${isDarkMode? '#57534e':'#e7e5e4'}`, borderRadius:8, padding:16}}>
+            <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:16}}>
+              <div style={{flex:'1', minWidth:200}}>
+                <h3 style={{fontSize:'1.125rem', fontWeight:600, marginBottom:4, color: isDarkMode ? '#f5f5f4' : '#1c1917'}}>{book.title}</h3>
+                <p style={{color: isDarkMode ? '#d6d3d1' : '#57534e', marginBottom:8}}>by {book.author}</p>
+                <div style={{display:'flex', flexWrap:'wrap', gap:8, fontSize:14}}>
+                  <span style={{backgroundColor:isDarkMode? '#57534e':'#e7e5e4', color:isDarkMode? '#e7e5e4':'#1c1917', padding:'4px 8px', borderRadius:4}}>{book.genre || ''}</span>
+                  <span style={{color:isDarkMode? '#a8a29e' : '#57534e'}}>ISBN: {book.isbn || '-'}</span>
                 </div>
               </div>
-              <div style={bookActionsStyle}>
-                <span style={statusStyle(book.status)}>{book.status}</span>
-                <button style={actionButtonStyle}>
-                  {book.status === 'Available' ? 'Check Out' : 'Return'}
-                </button>
+              <div style={{display:'flex', alignItems:'center', gap:12, flexWrap:'wrap'}}>
+                <span style={{
+                  padding:'4px 12px', borderRadius:20, fontSize:14, fontWeight:500,
+                  backgroundColor: book.available ? (isDarkMode? '#14532d':'#dcfce7') : (isDarkMode? '#7f1d1d' : '#fecaca'),
+                  color: book.available ? (isDarkMode? '#bbf7d0':'#166534') : (isDarkMode? '#fca5a5' : '#dc2626')
+                }}>{book.available ? 'Available' : 'Issued'}</span>
+
+                <button onClick={() => onToggle?.(book)} style={{backgroundColor:isDarkMode? '#78716c':'#57534e', color:'white', padding:'8px 16px', borderRadius:8, border:'none', cursor:'pointer'}}>Toggle</button>
+
+                <button onClick={() => onDelete?.(book.id)} style={{backgroundColor:'#b91c1c', color:'white', padding:'8px 16px', borderRadius:8, border:'none', cursor:'pointer'}}>Delete</button>
               </div>
             </div>
           </div>
@@ -512,14 +447,11 @@ function BookList({ isDarkMode }) {
   );
 }
 
-// UserList Component
-function UserList({ isDarkMode }) {
-  const mockUsers = [
-    { id: 1, name: "Emily Johnson", email: "emily@email.com", booksCheckedOut: 2, memberSince: "2023-01-15" },
-    { id: 2, name: "Michael Chen", email: "michael@email.com", booksCheckedOut: 1, memberSince: "2023-03-22" },
-    { id: 3, name: "Sarah Williams", email: "sarah@email.com", booksCheckedOut: 0, memberSince: "2022-11-08" },
-    { id: 4, name: "David Brown", email: "david@email.com", booksCheckedOut: 3, memberSince: "2023-05-10" }
-  ];
+// ---------------- UserList Component (wired to backend) ----------------
+function UserList({ isDarkMode, users = [], onAdded, onBorrow, onReturn, availableBooks = [] }) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [selectedBook, setSelectedBook] = useState("");
 
   const containerStyle = {
     backgroundColor: isDarkMode ? '#292524' : '#f5f5f4',
@@ -530,124 +462,58 @@ function UserList({ isDarkMode }) {
     transition: 'all 0.3s ease'
   };
 
-  const headerStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    marginBottom: '24px'
-  };
-
-  const titleStyle = {
-    fontSize: '1.5rem',
-    fontWeight: 'bold',
-    color: isDarkMode ? '#f5f5f4' : '#1c1917'
-  };
-
-  const usersGridStyle = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '16px'
-  };
-
-  const userCardStyle = {
-    backgroundColor: isDarkMode ? '#44403c' : 'white',
-    border: `1px solid ${isDarkMode ? '#57534e' : '#e7e5e4'}`,
-    borderRadius: '8px',
-    padding: '16px',
-    transition: 'all 0.2s ease'
-  };
-
-  const userHeaderStyle = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    flexWrap: 'wrap',
-    gap: '16px'
-  };
-
-  const userInfoStyle = {
-    flex: '1',
-    minWidth: '200px'
-  };
-
-  const userNameStyle = {
-    fontSize: '1.125rem',
-    fontWeight: '600',
-    color: isDarkMode ? '#f5f5f4' : '#1c1917',
-    marginBottom: '4px'
-  };
-
-  const userEmailStyle = {
-    color: isDarkMode ? '#d6d3d1' : '#57534e',
-    marginBottom: '8px'
-  };
-
-  const memberSinceStyle = {
-    fontSize: '0.875rem',
-    color: isDarkMode ? '#a8a29e' : '#78716c'
-  };
-
-  const userActionsStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '16px',
-    flexWrap: 'wrap'
-  };
-
-  const statsStyle = {
-    textAlign: 'center'
-  };
-
-  const statNumberStyle = {
-    fontSize: '1.5rem',
-    fontWeight: 'bold',
-    color: isDarkMode ? '#f5f5f4' : '#1c1917'
-  };
-
-  const statLabelStyle = {
-    fontSize: '0.75rem',
-    color: isDarkMode ? '#a8a29e' : '#57534e'
-  };
-
-  const actionButtonStyle = {
-    backgroundColor: isDarkMode ? '#78716c' : '#57534e',
-    color: 'white',
-    padding: '8px 16px',
-    borderRadius: '8px',
-    border: 'none',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease'
+  const addUser = async () => {
+    if(!name || !email) { alert("Fill name & email"); return; }
+    try {
+      await axios.post("/api/users", { name, email });
+      setName(""); setEmail("");
+      onAdded?.();
+      alert("User added");
+    } catch (e) { console.error(e); alert("Failed to add user"); }
   };
 
   return (
-    <div style={containerStyle}>
-      <div style={headerStyle}>
+    <div style={containerStyle} id="users">
+      <div style={{display:'flex', alignItems:'center', gap:12, marginBottom:16}}>
         <Users size={24} color={isDarkMode ? '#d6d3d1' : '#44403c'} />
-        <h2 style={titleStyle}>Library Members</h2>
+        <h2 style={{fontSize:'1.5rem', fontWeight:'bold', color: isDarkMode ? '#f5f5f4' : '#1c1917'}}>Library Members</h2>
       </div>
 
-      <div style={usersGridStyle}>
-        {mockUsers.map((user) => (
-          <div key={user.id} style={userCardStyle}>
-            <div style={userHeaderStyle}>
-              <div style={userInfoStyle}>
-                <h3 style={userNameStyle}>{user.name}</h3>
-                <p style={userEmailStyle}>{user.email}</p>
-                <p style={memberSinceStyle}>Member since: {user.memberSince}</p>
-              </div>
-              <div style={userActionsStyle}>
-                <div style={statsStyle}>
-                  <div style={statNumberStyle}>{user.booksCheckedOut}</div>
-                  <div style={statLabelStyle}>Books Out</div>
-                </div>
-                <button style={actionButtonStyle}>
-                  View Details
+      <div style={{display:'flex', gap:8, marginBottom:12}}>
+        <input value={name} onChange={e=>setName(e.target.value)} placeholder="Name" style={{padding:8, borderRadius:8, border:`1px solid ${isDarkMode? '#57534e':'#d6d3d1'}`, backgroundColor:isDarkMode? '#44403c':'white', color:isDarkMode? '#f5f5f4':'#1c1917'}}/>
+        <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email" style={{padding:8, borderRadius:8, border:`1px solid ${isDarkMode? '#57534e':'#d6d3d1'}`, backgroundColor:isDarkMode? '#44403c':'white', color:isDarkMode? '#f5f5f4':'#1c1917'}}/>
+        <button onClick={addUser} style={{backgroundColor:'#2563eb', color:'white', padding:'8px 12px', borderRadius:8}}>Add User</button>
+      </div>
+
+      <div style={{display:'flex', gap:8, marginBottom:18}}>
+        <select value={selectedBook} onChange={e=>setSelectedBook(e.target.value)} style={{padding:8, borderRadius:8, border:`1px solid ${isDarkMode? '#57534e':'#d6d3d1'}`, backgroundColor:isDarkMode? '#44403c':'white', color:isDarkMode? '#f5f5f4':'#1c1917'}}>
+          <option value="">Select book to issue</option>
+          {availableBooks.map(b => <option key={b.id} value={b.id}>{b.title}</option>)}
+        </select>
+      </div>
+
+      {users.map(u => (
+        <div key={u.id} style={{border:'1px solid', borderColor: isDarkMode? '#57534e':'#e7e5e4', borderRadius:8, padding:12, marginBottom:8, backgroundColor:isDarkMode? '#44403c':'white'}}>
+          <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+            <div>
+              <div style={{fontWeight:600, color:isDarkMode? '#f5f5f4':'#1c1917'}}>{u.name} <span style={{color:isDarkMode? '#a8a29e':'#57534e'}}>({u.email})</span></div>
+              <div style={{fontSize:12, color:isDarkMode? '#a8a29e':'#57534e'}}>Borrowed: {(u.borrowedBooks||[]).length}</div>
+            </div>
+            <div style={{display:'flex', gap:8}}>
+              <button onClick={() => {
+                if(!selectedBook) return alert("Select a book first");
+                onBorrow?.(u.id, selectedBook);
+              }} style={{padding:'8px 12px', borderRadius:8, backgroundColor:'#10b981', color:'white'}}>Issue Selected Book</button>
+
+              {(u.borrowedBooks||[]).map(bid => (
+                <button key={bid} onClick={() => onReturn?.(u.id, bid)} style={{padding:'8px 12px', borderRadius:8, backgroundColor:'#f97316', color:'white'}}>
+                  Return {String(bid).slice(-4)}
                 </button>
-              </div>
+              ))}
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
 }
