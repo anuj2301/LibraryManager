@@ -1,21 +1,60 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BookOpen, Users, Plus, Search, Menu, X, Sun, Moon } from "lucide-react";
 
 // Main App Component with Theme Context
 export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
 
+  // Apply global styles when component mounts
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.body.style.margin = '0';
+      document.body.style.padding = '0';
+      document.body.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+      document.body.style.lineHeight = '1.6';
+      document.body.style.boxSizing = 'border-box';
+      
+      // Apply box-sizing to all elements
+      const style = document.createElement('style');
+      style.textContent = `
+        *, *::before, *::after {
+          box-sizing: border-box;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }, []);
+
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
   };
 
+  const appStyle = {
+    minHeight: '100vh',
+    backgroundColor: isDarkMode ? '#1c1917' : '#fafaf9',
+    color: isDarkMode ? '#f5f5f4' : '#1c1917',
+    transition: 'all 0.3s ease'
+  };
+
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'bg-stone-900' : 'bg-stone-50'}`}>
+    <div style={appStyle}>
       <Navbar isDarkMode={isDarkMode} toggleTheme={toggleTheme} />
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="mb-8 text-center">
-          <h1 className={`text-4xl font-bold mb-2 transition-colors duration-300 ${isDarkMode ? 'text-stone-100' : 'text-stone-800'}`}>Welcome to Athenaeum</h1>
-          <p className={`text-lg transition-colors duration-300 ${isDarkMode ? 'text-stone-400' : 'text-stone-600'}`}>Your comprehensive library management solution</p>
+      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '24px' }}>
+        <div style={{ marginBottom: '32px', textAlign: 'center' }}>
+          <h1 style={{ 
+            fontSize: '2.5rem', 
+            fontWeight: 'bold', 
+            marginBottom: '8px',
+            color: isDarkMode ? '#f5f5f4' : '#1c1917'
+          }}>
+            Welcome to Athenaeum
+          </h1>
+          <p style={{ 
+            fontSize: '1.125rem',
+            color: isDarkMode ? '#a8a29e' : '#57534e'
+          }}>
+            Your comprehensive library management solution
+          </p>
         </div>
         <BookForm isDarkMode={isDarkMode} />
         <BookList isDarkMode={isDarkMode} />
@@ -29,94 +68,130 @@ export default function App() {
 function Navbar({ isDarkMode, toggleTheme }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+  const navStyle = {
+    background: isDarkMode 
+      ? 'linear-gradient(to right, #1c1917, #292524)' 
+      : 'linear-gradient(to right, #292524, #44403c)',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+    borderBottom: `2px solid ${isDarkMode ? '#44403c' : '#57534e'}`,
+    transition: 'all 0.3s ease'
+  };
+
+  const containerStyle = {
+    maxWidth: '1280px',
+    margin: '0 auto',
+    padding: '0 16px'
+  };
+
+  const headerStyle = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    height: '64px'
+  };
+
+  const logoStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px'
+  };
+
+  const titleStyle = {
+    fontSize: '1.5rem',
+    fontWeight: 'bold',
+    color: '#f5f5f4',
+    letterSpacing: '0.05em'
+  };
+
+  const subtitleStyle = {
+    fontSize: '0.875rem',
+    color: '#d6d3d1'
+  };
+
+  const navLinksStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '24px'
+  };
+
+  const linkStyle = {
+    color: '#e7e5e4',
+    textDecoration: 'none',
+    padding: '8px 12px',
+    borderRadius: '6px',
+    transition: 'all 0.2s ease',
+    cursor: 'pointer'
+  };
+
+  const buttonStyle = {
+    padding: '8px',
+    borderRadius: '8px',
+    backgroundColor: isDarkMode ? '#44403c' : '#57534e',
+    color: '#e7e5e4',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  };
+
+  const mobileMenuStyle = {
+    display: isMenuOpen ? 'block' : 'none',
+    paddingBottom: '16px'
+  };
+
+  const mobileLinksStyle = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px'
+  };
+
   return (
-    <nav className={`shadow-lg border-b-2 transition-colors duration-300 ${
-      isDarkMode 
-        ? 'bg-gradient-to-r from-stone-900 to-stone-800 border-stone-700' 
-        : 'bg-gradient-to-r from-stone-800 to-stone-700 border-stone-600'
-    }`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center space-x-3">
-            <BookOpen className="h-8 w-8 text-stone-200" />
-            <span className="text-2xl font-bold text-stone-100 tracking-wide">Athenaeum</span>
-            <span className="text-sm text-stone-300 hidden sm:block">Library Management</span>
+    <nav style={navStyle}>
+      <div style={containerStyle}>
+        <div style={headerStyle}>
+          <div style={logoStyle}>
+            <BookOpen size={32} color="#e7e5e4" />
+            <span style={titleStyle}>Athenaeum</span>
+            <span style={{ ...subtitleStyle, display: window.innerWidth < 640 ? 'none' : 'block' }}>
+              Library Management
+            </span>
           </div>
           
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-6">
-            <a href="#books" className={`text-stone-200 hover:text-white transition-colors duration-200 px-3 py-2 rounded-md ${
-              isDarkMode ? 'hover:bg-stone-700' : 'hover:bg-stone-600'
-            }`}>
-              Books
-            </a>
-            <a href="#users" className={`text-stone-200 hover:text-white transition-colors duration-200 px-3 py-2 rounded-md ${
-              isDarkMode ? 'hover:bg-stone-700' : 'hover:bg-stone-600'
-            }`}>
-              Users
-            </a>
-            <a href="#reports" className={`text-stone-200 hover:text-white transition-colors duration-200 px-3 py-2 rounded-md ${
-              isDarkMode ? 'hover:bg-stone-700' : 'hover:bg-stone-600'
-            }`}>
-              Reports
-            </a>
+          <div style={{ ...navLinksStyle, display: window.innerWidth < 768 ? 'none' : 'flex' }}>
+            <a href="#books" style={linkStyle}>Books</a>
+            <a href="#users" style={linkStyle}>Users</a>
+            <a href="#reports" style={linkStyle}>Reports</a>
             
-            {/* Theme Toggle */}
-            <button
-              onClick={toggleTheme}
-              className={`p-2 rounded-lg text-stone-200 transition-colors duration-200 ${
-                isDarkMode 
-                  ? 'bg-stone-700 hover:bg-stone-600' 
-                  : 'bg-stone-600 hover:bg-stone-500'
-              }`}
-            >
-              {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            <button onClick={toggleTheme} style={buttonStyle}>
+              {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>
           </div>
 
-          {/* Mobile menu button and theme toggle */}
-          <div className="md:hidden flex items-center space-x-2">
-            <button
-              onClick={toggleTheme}
-              className={`p-2 rounded-lg text-stone-200 transition-colors duration-200 ${
-                isDarkMode 
-                  ? 'bg-stone-700 hover:bg-stone-600' 
-                  : 'bg-stone-600 hover:bg-stone-500'
-              }`}
-            >
-              {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          {/* Mobile menu button */}
+          <div style={{ display: window.innerWidth < 768 ? 'flex' : 'none', alignItems: 'center', gap: '8px' }}>
+            <button onClick={toggleTheme} style={buttonStyle}>
+              {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="text-stone-200 hover:text-white"
+              style={buttonStyle}
             >
-              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
         </div>
 
         {/* Mobile Navigation */}
-        {isMenuOpen && (
-          <div className="md:hidden pb-4">
-            <div className="flex flex-col space-y-2">
-              <a href="#books" className={`text-stone-200 hover:text-white transition-colors duration-200 px-3 py-2 rounded-md ${
-                isDarkMode ? 'hover:bg-stone-700' : 'hover:bg-stone-600'
-              }`}>
-                Books
-              </a>
-              <a href="#users" className={`text-stone-200 hover:text-white transition-colors duration-200 px-3 py-2 rounded-md ${
-                isDarkMode ? 'hover:bg-stone-700' : 'hover:bg-stone-600'
-              }`}>
-                Users
-              </a>
-              <a href="#reports" className={`text-stone-200 hover:text-white transition-colors duration-200 px-3 py-2 rounded-md ${
-                isDarkMode ? 'hover:bg-stone-700' : 'hover:bg-stone-600'
-              }`}>
-                Reports
-              </a>
-            </div>
+        <div style={mobileMenuStyle}>
+          <div style={mobileLinksStyle}>
+            <a href="#books" style={linkStyle}>Books</a>
+            <a href="#users" style={linkStyle}>Users</a>
+            <a href="#reports" style={linkStyle}>Reports</a>
           </div>
-        )}
+        </div>
       </div>
     </nav>
   );
@@ -126,92 +201,123 @@ function Navbar({ isDarkMode, toggleTheme }) {
 function BookForm({ isDarkMode }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
+  const containerStyle = {
+    backgroundColor: isDarkMode ? '#292524' : '#f5f5f4',
+    borderRadius: '12px',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+    border: `1px solid ${isDarkMode ? '#44403c' : '#e7e5e4'}`,
+    padding: '24px',
+    marginBottom: '32px',
+    transition: 'all 0.3s ease'
+  };
+
+  const headerStyle = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '16px'
+  };
+
+  const titleContainerStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px'
+  };
+
+  const titleStyle = {
+    fontSize: '1.5rem',
+    fontWeight: 'bold',
+    color: isDarkMode ? '#f5f5f4' : '#1c1917'
+  };
+
+  const buttonStyle = {
+    backgroundColor: isDarkMode ? '#57534e' : '#44403c',
+    color: 'white',
+    padding: '8px 16px',
+    borderRadius: '8px',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+  };
+
+  const formStyle = {
+    display: isExpanded ? 'grid' : 'none',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+    gap: '16px',
+    marginTop: '24px'
+  };
+
+  const inputGroupStyle = {
+    display: 'flex',
+    flexDirection: 'column'
+  };
+
+  const labelStyle = {
+    fontSize: '0.875rem',
+    fontWeight: '600',
+    color: isDarkMode ? '#d6d3d1' : '#44403c',
+    marginBottom: '8px'
+  };
+
+  const inputStyle = {
+    width: '100%',
+    padding: '8px 16px',
+    border: `1px solid ${isDarkMode ? '#57534e' : '#d6d3d1'}`,
+    borderRadius: '8px',
+    backgroundColor: isDarkMode ? '#44403c' : 'white',
+    color: isDarkMode ? '#f5f5f4' : '#1c1917',
+    fontSize: '1rem',
+    transition: 'all 0.2s ease'
+  };
+
+  const submitButtonStyle = {
+    ...buttonStyle,
+    gridColumn: '1 / -1',
+    padding: '12px 24px',
+    fontSize: '1rem',
+    fontWeight: '600'
+  };
+
   return (
-    <div className={`rounded-xl shadow-lg border p-6 mb-8 transition-colors duration-300 ${
-      isDarkMode 
-        ? 'bg-stone-800 border-stone-700' 
-        : 'bg-stone-100 border-stone-200'
-    }`}>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center space-x-3">
-          <Plus className={`h-6 w-6 ${isDarkMode ? 'text-stone-300' : 'text-stone-700'}`} />
-          <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-stone-100' : 'text-stone-800'}`}>Add New Book</h2>
+    <div style={containerStyle}>
+      <div style={headerStyle}>
+        <div style={titleContainerStyle}>
+          <Plus size={24} color={isDarkMode ? '#d6d3d1' : '#44403c'} />
+          <h2 style={titleStyle}>Add New Book</h2>
         </div>
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className={`text-white px-4 py-2 rounded-lg transition-colors duration-200 shadow-md ${
-            isDarkMode 
-              ? 'bg-stone-600 hover:bg-stone-500' 
-              : 'bg-stone-700 hover:bg-stone-800'
-          }`}
-        >
+        <button onClick={() => setIsExpanded(!isExpanded)} style={buttonStyle}>
           {isExpanded ? 'Collapse' : 'Expand'}
         </button>
       </div>
       
-      {isExpanded && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-          <div>
-            <label className={`block text-sm font-semibold mb-2 ${isDarkMode ? 'text-stone-300' : 'text-stone-700'}`}>Title</label>
-            <input
-              type="text"
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-stone-500 focus:border-transparent transition-colors duration-200 ${
-                isDarkMode 
-                  ? 'border-stone-600 bg-stone-700 text-stone-100' 
-                  : 'border-stone-300 bg-white text-stone-900'
-              }`}
-              placeholder="Enter book title"
-            />
-          </div>
-          <div>
-            <label className={`block text-sm font-semibold mb-2 ${isDarkMode ? 'text-stone-300' : 'text-stone-700'}`}>Author</label>
-            <input
-              type="text"
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-stone-500 focus:border-transparent transition-colors duration-200 ${
-                isDarkMode 
-                  ? 'border-stone-600 bg-stone-700 text-stone-100' 
-                  : 'border-stone-300 bg-white text-stone-900'
-              }`}
-              placeholder="Enter author name"
-            />
-          </div>
-          <div>
-            <label className={`block text-sm font-semibold mb-2 ${isDarkMode ? 'text-stone-300' : 'text-stone-700'}`}>ISBN</label>
-            <input
-              type="text"
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-stone-500 focus:border-transparent transition-colors duration-200 ${
-                isDarkMode 
-                  ? 'border-stone-600 bg-stone-700 text-stone-100' 
-                  : 'border-stone-300 bg-white text-stone-900'
-              }`}
-              placeholder="Enter ISBN"
-            />
-          </div>
-          <div>
-            <label className={`block text-sm font-semibold mb-2 ${isDarkMode ? 'text-stone-300' : 'text-stone-700'}`}>Genre</label>
-            <select className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-stone-500 focus:border-transparent transition-colors duration-200 ${
-              isDarkMode 
-                ? 'border-stone-600 bg-stone-700 text-stone-100' 
-                : 'border-stone-300 bg-white text-stone-900'
-            }`}>
-              <option>Fiction</option>
-              <option>Non-Fiction</option>
-              <option>Science</option>
-              <option>History</option>
-              <option>Biography</option>
-            </select>
-          </div>
-          <div className="md:col-span-2">
-            <button className={`w-full text-white py-3 rounded-lg transition-colors duration-200 font-semibold shadow-md ${
-              isDarkMode 
-                ? 'bg-stone-600 hover:bg-stone-500' 
-                : 'bg-stone-700 hover:bg-stone-800'
-            }`}>
-              Add Book to Library
-            </button>
-          </div>
+      <div style={formStyle}>
+        <div style={inputGroupStyle}>
+          <label style={labelStyle}>Title</label>
+          <input type="text" placeholder="Enter book title" style={inputStyle} />
         </div>
-      )}
+        <div style={inputGroupStyle}>
+          <label style={labelStyle}>Author</label>
+          <input type="text" placeholder="Enter author name" style={inputStyle} />
+        </div>
+        <div style={inputGroupStyle}>
+          <label style={labelStyle}>ISBN</label>
+          <input type="text" placeholder="Enter ISBN" style={inputStyle} />
+        </div>
+        <div style={inputGroupStyle}>
+          <label style={labelStyle}>Genre</label>
+          <select style={inputStyle}>
+            <option>Fiction</option>
+            <option>Non-Fiction</option>
+            <option>Science</option>
+            <option>History</option>
+            <option>Biography</option>
+          </select>
+        </div>
+        <button style={submitButtonStyle}>
+          Add Book to Library
+        </button>
+      </div>
     </div>
   );
 }
@@ -227,74 +333,174 @@ function BookList({ isDarkMode }) {
     { id: 4, title: "Pride and Prejudice", author: "Jane Austen", isbn: "978-0-14-143951-8", status: "Available", genre: "Romance" }
   ];
 
+  const containerStyle = {
+    backgroundColor: isDarkMode ? '#292524' : '#f5f5f4',
+    borderRadius: '12px',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+    border: `1px solid ${isDarkMode ? '#44403c' : '#e7e5e4'}`,
+    padding: '24px',
+    marginBottom: '32px',
+    transition: 'all 0.3s ease'
+  };
+
+  const headerStyle = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '24px',
+    flexWrap: 'wrap',
+    gap: '16px'
+  };
+
+  const titleContainerStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px'
+  };
+
+  const titleStyle = {
+    fontSize: '1.5rem',
+    fontWeight: 'bold',
+    color: isDarkMode ? '#f5f5f4' : '#1c1917'
+  };
+
+  const searchContainerStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    backgroundColor: isDarkMode ? '#44403c' : 'white',
+    border: `1px solid ${isDarkMode ? '#57534e' : '#d6d3d1'}`,
+    borderRadius: '8px',
+    padding: '8px 12px'
+  };
+
+  const searchInputStyle = {
+    border: 'none',
+    outline: 'none',
+    backgroundColor: 'transparent',
+    color: isDarkMode ? '#f5f5f4' : '#1c1917',
+    fontSize: '1rem'
+  };
+
+  const booksGridStyle = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '16px'
+  };
+
+  const bookCardStyle = {
+    backgroundColor: isDarkMode ? '#44403c' : 'white',
+    border: `1px solid ${isDarkMode ? '#57534e' : '#e7e5e4'}`,
+    borderRadius: '8px',
+    padding: '16px',
+    transition: 'all 0.2s ease'
+  };
+
+  const bookHeaderStyle = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
+    gap: '16px'
+  };
+
+  const bookInfoStyle = {
+    flex: '1',
+    minWidth: '200px'
+  };
+
+  const bookTitleStyle = {
+    fontSize: '1.125rem',
+    fontWeight: '600',
+    color: isDarkMode ? '#f5f5f4' : '#1c1917',
+    marginBottom: '4px'
+  };
+
+  const bookAuthorStyle = {
+    color: isDarkMode ? '#d6d3d1' : '#57534e',
+    marginBottom: '8px'
+  };
+
+  const bookMetaStyle = {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '8px',
+    fontSize: '0.875rem'
+  };
+
+  const genreTagStyle = {
+    backgroundColor: isDarkMode ? '#57534e' : '#e7e5e4',
+    color: isDarkMode ? '#e7e5e4' : '#1c1917',
+    padding: '4px 8px',
+    borderRadius: '4px'
+  };
+
+  const bookActionsStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    flexWrap: 'wrap'
+  };
+
+  const statusStyle = (status) => ({
+    padding: '4px 12px',
+    borderRadius: '20px',
+    fontSize: '0.875rem',
+    fontWeight: '500',
+    backgroundColor: status === 'Available' 
+      ? isDarkMode ? '#14532d' : '#dcfce7' 
+      : isDarkMode ? '#7f1d1d' : '#fecaca',
+    color: status === 'Available' 
+      ? isDarkMode ? '#bbf7d0' : '#166534' 
+      : isDarkMode ? '#fca5a5' : '#dc2626'
+  });
+
+  const actionButtonStyle = {
+    backgroundColor: isDarkMode ? '#78716c' : '#57534e',
+    color: 'white',
+    padding: '8px 16px',
+    borderRadius: '8px',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease'
+  };
+
   return (
-    <div className={`rounded-xl shadow-lg border p-6 mb-8 transition-colors duration-300 ${
-      isDarkMode 
-        ? 'bg-stone-800 border-stone-700' 
-        : 'bg-stone-100 border-stone-200'
-    }`}>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-3">
-          <BookOpen className={`h-6 w-6 ${isDarkMode ? 'text-stone-300' : 'text-stone-700'}`} />
-          <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-stone-100' : 'text-stone-800'}`}>Library Collection</h2>
+    <div style={containerStyle}>
+      <div style={headerStyle}>
+        <div style={titleContainerStyle}>
+          <BookOpen size={24} color={isDarkMode ? '#d6d3d1' : '#44403c'} />
+          <h2 style={titleStyle}>Library Collection</h2>
         </div>
-        <div className={`flex items-center space-x-2 rounded-lg border px-3 py-2 transition-colors duration-200 ${
-          isDarkMode 
-            ? 'bg-stone-700 border-stone-600' 
-            : 'bg-white border-stone-300'
-        }`}>
-          <Search className={`h-5 w-5 ${isDarkMode ? 'text-stone-400' : 'text-stone-600'}`} />
+        <div style={searchContainerStyle}>
+          <Search size={20} color={isDarkMode ? '#a8a29e' : '#57534e'} />
           <input
             type="text"
             placeholder="Search books..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className={`outline-none bg-transparent ${
-              isDarkMode 
-                ? 'text-stone-100 placeholder-stone-400' 
-                : 'text-stone-800 placeholder-stone-500'
-            }`}
+            style={searchInputStyle}
           />
         </div>
       </div>
 
-      <div className="grid gap-4">
+      <div style={booksGridStyle}>
         {mockBooks.map((book) => (
-          <div key={book.id} className={`rounded-lg border p-4 hover:shadow-md transition-all duration-200 ${
-            isDarkMode 
-              ? 'bg-stone-700 border-stone-600' 
-              : 'bg-white border-stone-200'
-          }`}>
-            <div className="flex flex-col md:flex-row md:items-center justify-between">
-              <div className="flex-1">
-                <h3 className={`text-lg font-semibold mb-1 ${isDarkMode ? 'text-stone-100' : 'text-stone-800'}`}>{book.title}</h3>
-                <p className={`mb-2 ${isDarkMode ? 'text-stone-300' : 'text-stone-600'}`}>by {book.author}</p>
-                <div className="flex flex-wrap gap-2 text-sm">
-                  <span className={`px-2 py-1 rounded transition-colors duration-200 ${
-                    isDarkMode 
-                      ? 'bg-stone-600 text-stone-200' 
-                      : 'bg-stone-200 text-stone-800'
-                  }`}>{book.genre}</span>
-                  <span className={isDarkMode ? 'text-stone-400' : 'text-stone-600'}>ISBN: {book.isbn}</span>
+          <div key={book.id} style={bookCardStyle}>
+            <div style={bookHeaderStyle}>
+              <div style={bookInfoStyle}>
+                <h3 style={bookTitleStyle}>{book.title}</h3>
+                <p style={bookAuthorStyle}>by {book.author}</p>
+                <div style={bookMetaStyle}>
+                  <span style={genreTagStyle}>{book.genre}</span>
+                  <span style={{ color: isDarkMode ? '#a8a29e' : '#57534e' }}>
+                    ISBN: {book.isbn}
+                  </span>
                 </div>
               </div>
-              <div className="mt-3 md:mt-0 flex items-center space-x-3">
-                <span className={`px-3 py-1 rounded-full text-sm font-medium transition-colors duration-200 ${
-                  book.status === 'Available' 
-                    ? isDarkMode 
-                      ? 'bg-green-900 text-green-200' 
-                      : 'bg-green-100 text-green-800'
-                    : isDarkMode 
-                      ? 'bg-red-900 text-red-200' 
-                      : 'bg-red-100 text-red-800'
-                }`}>
-                  {book.status}
-                </span>
-                <button className={`text-white px-4 py-2 rounded-lg transition-colors duration-200 ${
-                  isDarkMode 
-                    ? 'bg-stone-500 hover:bg-stone-400' 
-                    : 'bg-stone-600 hover:bg-stone-700'
-                }`}>
+              <div style={bookActionsStyle}>
+                <span style={statusStyle(book.status)}>{book.status}</span>
+                <button style={actionButtonStyle}>
                   {book.status === 'Available' ? 'Check Out' : 'Return'}
                 </button>
               </div>
@@ -315,40 +521,126 @@ function UserList({ isDarkMode }) {
     { id: 4, name: "David Brown", email: "david@email.com", booksCheckedOut: 3, memberSince: "2023-05-10" }
   ];
 
+  const containerStyle = {
+    backgroundColor: isDarkMode ? '#292524' : '#f5f5f4',
+    borderRadius: '12px',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+    border: `1px solid ${isDarkMode ? '#44403c' : '#e7e5e4'}`,
+    padding: '24px',
+    transition: 'all 0.3s ease'
+  };
+
+  const headerStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    marginBottom: '24px'
+  };
+
+  const titleStyle = {
+    fontSize: '1.5rem',
+    fontWeight: 'bold',
+    color: isDarkMode ? '#f5f5f4' : '#1c1917'
+  };
+
+  const usersGridStyle = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '16px'
+  };
+
+  const userCardStyle = {
+    backgroundColor: isDarkMode ? '#44403c' : 'white',
+    border: `1px solid ${isDarkMode ? '#57534e' : '#e7e5e4'}`,
+    borderRadius: '8px',
+    padding: '16px',
+    transition: 'all 0.2s ease'
+  };
+
+  const userHeaderStyle = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
+    gap: '16px'
+  };
+
+  const userInfoStyle = {
+    flex: '1',
+    minWidth: '200px'
+  };
+
+  const userNameStyle = {
+    fontSize: '1.125rem',
+    fontWeight: '600',
+    color: isDarkMode ? '#f5f5f4' : '#1c1917',
+    marginBottom: '4px'
+  };
+
+  const userEmailStyle = {
+    color: isDarkMode ? '#d6d3d1' : '#57534e',
+    marginBottom: '8px'
+  };
+
+  const memberSinceStyle = {
+    fontSize: '0.875rem',
+    color: isDarkMode ? '#a8a29e' : '#78716c'
+  };
+
+  const userActionsStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '16px',
+    flexWrap: 'wrap'
+  };
+
+  const statsStyle = {
+    textAlign: 'center'
+  };
+
+  const statNumberStyle = {
+    fontSize: '1.5rem',
+    fontWeight: 'bold',
+    color: isDarkMode ? '#f5f5f4' : '#1c1917'
+  };
+
+  const statLabelStyle = {
+    fontSize: '0.75rem',
+    color: isDarkMode ? '#a8a29e' : '#57534e'
+  };
+
+  const actionButtonStyle = {
+    backgroundColor: isDarkMode ? '#78716c' : '#57534e',
+    color: 'white',
+    padding: '8px 16px',
+    borderRadius: '8px',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease'
+  };
+
   return (
-    <div className={`rounded-xl shadow-lg border p-6 transition-colors duration-300 ${
-      isDarkMode 
-        ? 'bg-stone-800 border-stone-700' 
-        : 'bg-stone-100 border-stone-200'
-    }`}>
-      <div className="flex items-center space-x-3 mb-6">
-        <Users className={`h-6 w-6 ${isDarkMode ? 'text-stone-300' : 'text-stone-700'}`} />
-        <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-stone-100' : 'text-stone-800'}`}>Library Members</h2>
+    <div style={containerStyle}>
+      <div style={headerStyle}>
+        <Users size={24} color={isDarkMode ? '#d6d3d1' : '#44403c'} />
+        <h2 style={titleStyle}>Library Members</h2>
       </div>
 
-      <div className="grid gap-4">
+      <div style={usersGridStyle}>
         {mockUsers.map((user) => (
-          <div key={user.id} className={`rounded-lg border p-4 hover:shadow-md transition-all duration-200 ${
-            isDarkMode 
-              ? 'bg-stone-700 border-stone-600' 
-              : 'bg-white border-stone-200'
-          }`}>
-            <div className="flex flex-col md:flex-row md:items-center justify-between">
-              <div className="flex-1">
-                <h3 className={`text-lg font-semibold mb-1 ${isDarkMode ? 'text-stone-100' : 'text-stone-800'}`}>{user.name}</h3>
-                <p className={`mb-2 ${isDarkMode ? 'text-stone-300' : 'text-stone-600'}`}>{user.email}</p>
-                <p className={`text-sm ${isDarkMode ? 'text-stone-400' : 'text-stone-500'}`}>Member since: {user.memberSince}</p>
+          <div key={user.id} style={userCardStyle}>
+            <div style={userHeaderStyle}>
+              <div style={userInfoStyle}>
+                <h3 style={userNameStyle}>{user.name}</h3>
+                <p style={userEmailStyle}>{user.email}</p>
+                <p style={memberSinceStyle}>Member since: {user.memberSince}</p>
               </div>
-              <div className="mt-3 md:mt-0 flex items-center space-x-4">
-                <div className="text-center">
-                  <div className={`text-2xl font-bold ${isDarkMode ? 'text-stone-100' : 'text-stone-800'}`}>{user.booksCheckedOut}</div>
-                  <div className={`text-xs ${isDarkMode ? 'text-stone-400' : 'text-stone-600'}`}>Books Out</div>
+              <div style={userActionsStyle}>
+                <div style={statsStyle}>
+                  <div style={statNumberStyle}>{user.booksCheckedOut}</div>
+                  <div style={statLabelStyle}>Books Out</div>
                 </div>
-                <button className={`text-white px-4 py-2 rounded-lg transition-colors duration-200 ${
-                  isDarkMode 
-                    ? 'bg-stone-500 hover:bg-stone-400' 
-                    : 'bg-stone-600 hover:bg-stone-700'
-                }`}>
+                <button style={actionButtonStyle}>
                   View Details
                 </button>
               </div>
