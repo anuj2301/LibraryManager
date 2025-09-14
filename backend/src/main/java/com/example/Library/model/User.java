@@ -15,4 +15,5 @@ public class User {
     private String name;
     private String email;
     private List<String> borrowedBooks = new ArrayList<>();
+    private String librarianId; // Added for multi-tenant support
 }

@@ -13,4 +13,5 @@ public class Book {
     private String author;
     private String isbn;
     private boolean available = true;
+    private String librarianId; // Added for multi-tenant support
 }

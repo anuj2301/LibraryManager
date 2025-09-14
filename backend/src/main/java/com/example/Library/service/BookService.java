@@ -15,14 +15,25 @@ public class BookService {
         this.repo = repo;
     }
 
-    public List<Book> getAll() { return repo.findAll(); }
+    public List<Book> getAll() { 
+        String librarianId = TenantContext.getTenantId();
+        return repo.findByLibrarianId(librarianId); 
+    }
 
-    public Optional<Book> getById(String id) { return repo.findById(id); }
+    public Optional<Book> getById(String id) { 
+        String librarianId = TenantContext.getTenantId();
+        return repo.findByIdAndLibrarianId(id, librarianId); 
+    }
 
-    public Book create(Book book) { return repo.save(book); }
+    public Book create(Book book) { 
+        String librarianId = TenantContext.getTenantId();
+        book.setLibrarianId(librarianId);
+        return repo.save(book); 
+    }
 
     public Book update(String id, Book updated) {
-        return repo.findById(id).map(b -> {
+        String librarianId = TenantContext.getTenantId();
+        return repo.findByIdAndLibrarianId(id, librarianId).map(b -> {
             b.setTitle(updated.getTitle());
             b.setAuthor(updated.getAuthor());
             b.setIsbn(updated.getIsbn());
@@ -31,5 +42,8 @@ public class BookService {
         }).orElseThrow(() -> new RuntimeException("Book not found: " + id));
     }
 
-    public void delete(String id) { repo.deleteById(id); }
+    public void delete(String id) { 
+        String librarianId = TenantContext.getTenantId();
+        repo.deleteByIdAndLibrarianId(id, librarianId);
+    }
 }
