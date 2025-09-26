@@ -1,0 +1,6 @@
+start cmd /k "title Eureka Server && cd eureka-server && mvn spring-boot:run -X"
+start cmd /k "title API Gateway && cd api-gateway && mvn spring-boot:run -X"
+start cmd /k "title Department Library Service && cd department-library-service && mvn spring-boot:run -X"
+start cmd /k "title Notification Service && cd notification-service && mvn spring-boot:run -X"
+start cmd /k "title Backend && cd backend && mvn spring-boot:run -X"
+start cmd /k "title Frontend && cd frontend && npm run dev"
